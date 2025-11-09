@@ -13,8 +13,6 @@ Chat with friends, receive notifications, and stay connected right from your wri
 ## Features
 - View dialogs and messages  
 - Send text messages  
-- Receive real-time notifications  
-- Minimal UI optimized for small screens  
 
 ---
 
