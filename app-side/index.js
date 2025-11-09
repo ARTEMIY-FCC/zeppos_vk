@@ -1,7 +1,7 @@
 import { BaseSideService } from "@zeppos/zml/base-side";
 
 const VK_API_BASE = "https://api.vk.com/method/";
-//ВСТАВЬТЕ СЮДА ВАШ ТОКЕН ВКОНТАКТЕ
+//PUT YOUR VK TOKEN HERE
 const ACCESS_TOKEN = "YOUR_VK_TOKEN";
 const API_VERSION = "5.131";
 
