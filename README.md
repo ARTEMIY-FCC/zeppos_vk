@@ -45,11 +45,11 @@ cd zeppos_vk
 ### 4. Insert the token
 Open `zeppos_vk/app-side/index.js` and replace  
 ```js
-const YOUR_VK_TOKEN = "YOUR_VK_TOKEN";
+const ACCESS_TOKEN = "YOUR_VK_TOKEN";
 ```  
 with your actual token:
 ```js
-const YOUR_VK_TOKEN = "vk1.a.1mGUhSMwjoqIs7HXcFPOc-lgoZppChEuZ...L3573pZomSad";
+const ACCESS_TOKEN = "vk1.a.1mGUhSMwjoqIs7HXcFPOc-lgoZppChEuZ...L3573pZomSad";
 ```
 
 ### 5. Preview & install
