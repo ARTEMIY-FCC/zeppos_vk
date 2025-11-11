@@ -1,12 +1,9 @@
 import { BaseSideService } from "@zeppos/zml/base-side";
+import { settingsLib } from '@zeppos/zml/base-side'
 
 const VK_API_BASE = "https://api.vk.com/method/";
-// ВСТАВЬ СВОИ ТОКЕНЫ ВК СЮДА
-const TOKENS = [
-  { name: "Аккаунт 1", value: "твой_токен_вк" },
-  { name: "Аккаунт 2", value: "можешь_еще_сюда" },
-  { name: "Аккаунт 3", value: "и_сюда_если_надо" }
-];
+const TOKEN_NAMES = ["Аккаунт 1", "Аккаунт 2", "Аккаунт 3"];
+let TOKENS = TOKEN_NAMES.map((name, i) => ({ name, value: settingsLib.getItem(`token${i+1}`) || "" }));
 let ACCESS_TOKEN = TOKENS.find(t => t.value.trim())?.value || "";
 const API_VERSION = "5.131";
 
@@ -42,7 +39,7 @@ class VKClient {
         console.error("VK API Error:", responseBody.error);
         throw new Error(responseBody.error.error_msg || "VK API error");
       }
-      if (!responseBody.response) throw new Error("Invalid VK API response");
+      if (responseBody.response === undefined) throw new Error("Invalid VK API response");
       return responseBody.response;
     } catch (error) {
       console.error(`[makeVKRequest] ${method} error:`, error && error.message ? error.message : error);
@@ -257,11 +254,13 @@ async function handleRequest(method, params, res) {
     console.log(`=== HANDLE ${method} ===`, params);
     switch (method) {
       case "GET_TOKENS": {
+        TOKENS = TOKEN_NAMES.map((name, i) => ({ name, value: settingsLib.getItem(`token${i+1}`) || "" }));
         const validTokens = TOKENS.filter(t => t.value.trim());
         res(null, { success: true, tokens: validTokens.map(t => t.name) });
         break;
       }
       case "SET_TOKEN": {
+        TOKENS = TOKEN_NAMES.map((name, i) => ({ name, value: settingsLib.getItem(`token${i+1}`) || "" }));
         const index = params.index;
         const validTokens = TOKENS.filter(t => t.value.trim());
         if (index >= 0 && index < validTokens.length) {
