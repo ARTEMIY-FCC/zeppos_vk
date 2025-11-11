@@ -5,8 +5,6 @@
 Лёгкий мессенджер ВКонтакте для часов Amazfit на **Zepp OS**.  
 Общайтесь с друзьями прямо с запястья!
 
-![demo](https://cube.mylittleproject.ru/video.gif)
-
 ---
 
 ## Особенности
