@@ -3,6 +3,8 @@
 **VKontakte client for Zepp OS**
 A lightweight VK messenger app for Amazfit watches running **Zepp OS**.
 Chat with friends, and stay connected right from your wrist.
+
+![video](https://cube.mylittleproject.ru/video.gif)
 ---
 ## Features
 - View dialogs and messages
