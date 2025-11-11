@@ -1,7 +1,6 @@
 import * as hmUI from "@zos/ui";
 import { log as Logger } from "@zos/utils";
 import { BasePage } from "@zeppos/zml/base-page";
-import { createKeyboard, deleteKeyboard, inputType } from "@zos/ui";
 import { setScrollLock } from "@zos/page";
 import { pauseDropWristScreenOff } from '@zos/display';
 
@@ -37,6 +36,203 @@ const COLORS = {
   link: 0x5289f7
 };
 
+// Keyboard constants and variables
+const SPACE = 2;
+const BUTTON_H = 50;
+const TEXT_SIZE = 24;
+const NORMAL_COLOR = 0x222222;
+const PRESS_COLOR = 0x444444;
+const TEXT_COLOR = 0xffffff;
+const ROW_SPACING = 60;
+
+const SCREEN_WIDTH = 480;
+const X_MARGIN = 10;
+const AVAILABLE_WIDTH = SCREEN_WIDTH - (X_MARGIN * 2);
+
+const rusRow1 = ['й', 'ц', 'у', 'к', 'е', 'н', 'г', 'ш', 'щ', 'з', 'х', 'ъ'];
+const rusRow2 = ['ф', 'ы', 'в', 'а', 'п', 'р', 'о', 'л', 'д', 'ж', 'э'];
+const rusRow3 = ['я', 'ч', 'с', 'м', 'и', 'т', 'ь', 'б', 'ю'];
+
+const engRow1 = ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'];
+const engRow2 = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
+const engRow3 = ['z', 'x', 'c', 'v', 'b', 'n', 'm'];
+
+const symRow1 = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+const symRow2 = ['@', '#', '₽', '$', '€', '&', '*', '(', ')'];
+const symRow3 = ['-', '_', '+', '=', '/', '?', '!', '.'];
+
+const symRow2_1 = ['[', ']', '{', '}', '<', '>', '~', '`', '\\'];
+const symRow2_2 = ['|', ':', ';', '"', "'", '©', '®', '™'];
+const symRow2_3 = ['%', '^', '¥', '£', '¢', ',', '.'];
+
+const emojiRow1 = ['🙂', '😀', '😂', '😍', '🤔', '👍', '👎', '❤️', '🔥', '🎉'];
+const emojiRow2 = ['🚀', '⭐', '👋', '🙏', '🤷', '😥', '😡', '🥳', '✅', '❌'];
+const emojiRow3 = ['➡️', '⬅️', '🕒', '💡', '🌍', '💻', '💰', '🍔', '✈️', '⚙️'];
+
+let row1Keys = [...rusRow1];
+let row2Keys = [...rusRow2];
+let row3Keys = [...rusRow3];
+
+let inputStr = "";
+let isUpper = false;
+let currentLayout = 'RUS';
+
+let inputTextWidget;
+let keyboardY = 180;
+let letterButtons = [[], [], []];
+let specialButtons = [];
+let spacebarButton;
+
+const updateText = () => {
+    if (inputTextWidget) {
+        inputTextWidget.setProperty(hmUI.prop.TEXT, inputStr || "Текст..");
+    }
+};
+
+const updateKeys = () => {
+    row1Keys.forEach((char, i) => {
+        const btnObj = letterButtons[0][i];
+        if (btnObj && btnObj.widget) {
+            btnObj.widget.setProperty(hmUI.prop.TEXT, isUpper ? char.toUpperCase() : char);
+        }
+    });
+    row2Keys.forEach((char, i) => {
+        const btnObj = letterButtons[1][i];
+        if (btnObj && btnObj.widget) {
+            btnObj.widget.setProperty(hmUI.prop.TEXT, isUpper ? char.toUpperCase() : char);
+        }
+    });
+    row3Keys.forEach((char, i) => {
+        const btnObj = letterButtons[2][i];
+        if (btnObj && btnObj.widget) {
+            btnObj.widget.setProperty(hmUI.prop.TEXT, isUpper ? char.toUpperCase() : char);
+        }
+    });
+};
+
+const createLetterButton = (x, yOffset, char, buttonW) => {
+    const y = keyboardY + yOffset;
+    let text = (currentLayout === 'EMOJI' || (currentLayout === 'SYM' && isUpper))
+        ? char
+        : (isUpper ? char.toUpperCase() : char);
+
+    const widget = hmUI.createWidget(hmUI.widget.BUTTON, {
+        x,
+        y,
+        w: buttonW,
+        h: BUTTON_H,
+        text: text,
+        text_size: TEXT_SIZE,
+        color: TEXT_COLOR,
+        normal_color: NORMAL_COLOR,
+        press_color: PRESS_COLOR,
+        radius: 4,
+        click_func: () => {
+            const inputChar = (currentLayout === 'EMOJI' || (currentLayout === 'SYM' && isUpper))
+                ? char
+                : (isUpper ? char.toUpperCase() : char);
+
+            inputStr += inputChar;
+            updateText();
+        },
+    });
+
+    return { widget, x, yOffset, char };
+};
+
+const destroyLetterButtons = () => {
+    letterButtons.forEach(row => {
+        row.forEach(btnObj => {
+            if (btnObj && btnObj.widget) {
+                hmUI.deleteWidget(btnObj.widget);
+            }
+        });
+    });
+    letterButtons = [[], [], []];
+};
+
+const drawLetterButtons = () => {
+    const maxKeys = Math.max(row1Keys.length, row2Keys.length, row3Keys.length);
+    
+    const buttonW = Math.floor((AVAILABLE_WIDTH - (maxKeys - 1) * SPACE) / maxKeys);
+
+    let row1Width = row1Keys.length * buttonW + (row1Keys.length - 1) * SPACE;
+    let row1X = (SCREEN_WIDTH - row1Width) / 2;
+    let currentX = row1X;
+    row1Keys.forEach((char, i) => {
+        const btnObj = createLetterButton(currentX, 0, char, buttonW);
+        letterButtons[0].push(btnObj);
+        currentX += buttonW + SPACE;
+    });
+
+    let row2Width = row2Keys.length * buttonW + (row2Keys.length - 1) * SPACE;
+    let row2X = (SCREEN_WIDTH - row2Width) / 2;
+    currentX = row2X;
+    row2Keys.forEach((char, i) => {
+        const btnObj = createLetterButton(currentX, ROW_SPACING, char, buttonW);
+        letterButtons[1].push(btnObj);
+        currentX += buttonW + SPACE;
+    });
+
+    let row3Width = row3Keys.length * buttonW + (row3Keys.length - 1) * SPACE;
+    let row3X = (SCREEN_WIDTH - row3Width) / 2;
+    currentX = row3X;
+    row3Keys.forEach((char, i) => {
+        const btnObj = createLetterButton(currentX, ROW_SPACING * 2, char, buttonW);
+        letterButtons[2].push(btnObj);
+        currentX += buttonW + SPACE;
+    });
+};
+
+const updateSpecialButtonLabels = () => {
+    if (!specialButtons[0] || !specialButtons[1]) return;
+
+    const shiftBtnWidget = specialButtons[0].widget;
+    const globeBtnWidget = specialButtons[1].widget;
+    const deleteBtnWidget = specialButtons[2].widget;
+
+    deleteBtnWidget.setProperty(hmUI.prop.TEXT, '<');
+
+    if (currentLayout === 'RUS') {
+        shiftBtnWidget.setProperty(hmUI.prop.TEXT, isUpper ? '↓' : '↑');
+        globeBtnWidget.setProperty(hmUI.prop.TEXT, 'ENG');
+    } else if (currentLayout === 'ENG') {
+        shiftBtnWidget.setProperty(hmUI.prop.TEXT, isUpper ? '↓' : '↑');
+        globeBtnWidget.setProperty(hmUI.prop.TEXT, '123');
+    } else if (currentLayout === 'SYM') {
+        shiftBtnWidget.setProperty(hmUI.prop.TEXT, isUpper ? '123' : '#+=');
+        globeBtnWidget.setProperty(hmUI.prop.TEXT, '🙂');
+    } else if (currentLayout === 'EMOJI') {
+        shiftBtnWidget.setProperty(hmUI.prop.TEXT, '..');
+        globeBtnWidget.setProperty(hmUI.prop.TEXT, 'РУС');
+    }
+};
+
+const moveKeyboard = (delta) => {
+    keyboardY += delta;
+    for (let r = 0; r < letterButtons.length; r++) {
+        for (let k = 0; k < letterButtons[r].length; k++) {
+            const btnObj = letterButtons[r][k];
+            if (btnObj && btnObj.widget) {
+                const newY = keyboardY + btnObj.yOffset;
+                btnObj.widget.setProperty(hmUI.prop.Y, newY);
+            }
+        }
+    }
+    for (let i = 0; i < specialButtons.length; i++) {
+        const s = specialButtons[i];
+        if (s && s.widget) {
+            const newY = keyboardY + s.yOffset;
+            s.widget.setProperty(hmUI.prop.Y, newY);
+        }
+    }
+
+    if (spacebarButton && spacebarButton.widget) {
+        const newY = keyboardY + spacebarButton.yOffset;
+        spacebarButton.widget.setProperty(hmUI.prop.Y, newY);
+    }
+};
+
 let conversations = [], profiles = [], groups = [];
 let currentChatId = null, currentChatTitle = "", currentMessages = [];
 let currentChatProfiles = [], currentChatGroups = [];
@@ -56,7 +252,6 @@ function safeClear() {
   while (createdWidgets.length) hmUI.deleteWidget(createdWidgets.pop());
   messagesContainer = null;
   feedContainer = null;
-  try { deleteKeyboard(); } catch (e) {}
 }
 
 function widget(type, props) {
@@ -239,11 +434,243 @@ function request(method, params = {}, timeout = 30000) {
 }
 
 Page(BasePage({
+  onInit() {
+    logger.debug("page onInit invoked");
+  },
+
   build() {
     this.showSplash();
     setTimeout(() => {
       this.selectTokenIfNeeded();
     }, 300);
+  },
+
+  onDestroy() {
+    logger.debug("page onDestroy invoked");
+  },
+
+  buildKeyboard() {
+    logger.debug("keyboard build invoked");
+
+    widget(hmUI.widget.FILL_RECT, { x: 0, y: 0, w: SCREEN_W, h: SCREEN_H, color: COLORS.bg });
+
+    inputStr = this.keyboardInitial || "";
+    row1Keys = [...rusRow1];
+    row2Keys = [...rusRow2];
+    row3Keys = [...rusRow3];
+    isUpper = false;
+    currentLayout = 'RUS';
+    keyboardY = 180;
+    letterButtons = [[], [], []];
+    specialButtons = [];
+    spacebarButton = null;
+
+    // Отмена кнопка
+    widget(hmUI.widget.BUTTON, {
+      x: 80,
+      y: 50,
+      w: 100,
+      h: 50,
+      text: "Отмена",
+      text_size: 28,
+      color: TEXT_COLOR,
+      normal_color: 0x888888,
+      press_color: 0x666666,
+      radius: 8,
+      click_func: () => {
+        this.onKeyboardCancel();
+      },
+    });
+
+    // Отправить кнопка (замена OK)
+    widget(hmUI.widget.BUTTON, {
+      x: 300,
+      y: 50,
+      w: 120,
+      h: 50,
+      text: "Отправить",
+      text_size: 28,
+      color: TEXT_COLOR,
+      normal_color: 0x0088ff,
+      press_color: 0x0066cc,
+      radius: 8,
+      click_func: () => {
+        this.onKeyboardComplete(inputStr);
+      },
+    });
+
+    inputTextWidget = widget(hmUI.widget.TEXT, {
+      x: 0,
+      y: 110,
+      w: SCREEN_WIDTH,
+      h: 60,
+      color: TEXT_COLOR,
+      text: "Текст..",
+      text_size: 28,
+      align_h: hmUI.align.CENTER_H,
+      align_v: hmUI.align.CENTER_V,
+    });
+
+    drawLetterButtons();
+
+    const specialKeys = ['^', 'G', 'D'];
+    const specialW = 80;
+    const specialSpace = 20;
+    let bottomWidth = specialKeys.length * specialW + (specialKeys.length - 1) * specialSpace;
+    let bottomX = (SCREEN_WIDTH - bottomWidth) / 2;
+    let currentX = bottomX;
+
+    specialKeys.forEach((sym, i) => {
+      const yOffset = ROW_SPACING * 3;
+      const widgetBtn = widget(hmUI.widget.BUTTON, {
+        x: currentX,
+        y: keyboardY + yOffset,
+        w: specialW,
+        h: BUTTON_H,
+        text: sym,
+        text_size: TEXT_SIZE,
+        color: TEXT_COLOR,
+        normal_color: 0x666666,
+        press_color: 0x888888,
+        radius: 4,
+        click_func: () => {
+          if (i === 0) {
+            if (currentLayout === 'RUS' || currentLayout === 'ENG') {
+              isUpper = !isUpper;
+              updateKeys();
+            } else if (currentLayout === 'SYM') {
+              isUpper = !isUpper;
+              destroyLetterButtons();
+              if (isUpper) {
+                row1Keys = symRow2_1;
+                row2Keys = symRow2_2;
+                row3Keys = symRow2_3;
+              } else {
+                row1Keys = symRow1;
+                row2Keys = symRow2;
+                row3Keys = symRow3;
+              }
+              drawLetterButtons();
+            }
+            updateSpecialButtonLabels();
+
+          } else if (i === 1) {
+            isUpper = false;
+            destroyLetterButtons();
+
+            if (currentLayout === 'RUS') {
+              currentLayout = 'ENG';
+              row1Keys = engRow1; row2Keys = engRow2; row3Keys = engRow3;
+            } else if (currentLayout === 'ENG') {
+              currentLayout = 'SYM';
+              row1Keys = symRow1; row2Keys = symRow2; row3Keys = symRow3;
+            } else if (currentLayout === 'SYM') {
+              currentLayout = 'EMOJI';
+              row1Keys = emojiRow1; row2Keys = emojiRow2; row3Keys = emojiRow3;
+            } else if (currentLayout === 'EMOJI') {
+              currentLayout = 'RUS';
+              row1Keys = rusRow1; row2Keys = rusRow2; row3Keys = rusRow3;
+            }
+
+            drawLetterButtons();
+            updateSpecialButtonLabels();
+          } else if (i === 2) {
+            if (inputStr.length > 0) {
+              inputStr = inputStr.slice(0, -1);
+              updateText();
+            }
+          }
+        },
+      });
+      specialButtons.push({ widget: widgetBtn, x: currentX, yOffset, sym });
+      currentX += specialW + specialSpace;
+    });
+
+    specialButtons[2].widget.setProperty(hmUI.prop.TEXT, '<');
+    updateSpecialButtonLabels();
+
+    const spacebarW = 200;
+    const spacebarX = (SCREEN_WIDTH - spacebarW) / 2;
+    const spacebarYOffset = ROW_SPACING * 4;
+
+    const spacebarWidget = widget(hmUI.widget.BUTTON, {
+      x: spacebarX,
+      y: keyboardY + spacebarYOffset,
+      w: spacebarW,
+      h: BUTTON_H,
+      text: ' ',
+      text_size: TEXT_SIZE,
+      color: TEXT_COLOR,
+      normal_color: 0x444444,
+      press_color: 0x666666,
+      radius: 4,
+      click_func: () => {
+        inputStr += ' ';
+        updateText();
+      },
+    });
+    spacebarButton = { widget: spacebarWidget, x: spacebarX, yOffset: spacebarYOffset, sym: ' ' };
+
+    widget(hmUI.widget.BUTTON, {
+      x: 430,
+      y: 20,
+      w: 40,
+      h: 40,
+      text: "▲",
+      text_size: 20,
+      color: TEXT_COLOR,
+      normal_color: 0x444444,
+      press_color: 0x666666,
+      radius: 4,
+      click_func: () => {
+        moveKeyboard(-10);
+      },
+    });
+
+    widget(hmUI.widget.BUTTON, {
+      x: 430,
+      y: 70,
+      w: 40,
+      h: 40,
+      text: "▼",
+      text_size: 20,
+      color: TEXT_COLOR,
+      normal_color: 0x444444,
+      press_color: 0x666666,
+      radius: 4,
+      click_func: () => {
+        moveKeyboard(10);
+      },
+    });
+
+    updateText();
+  },
+
+  showCustomKeyboard(forWhat, initial) {
+    this.keyboardFor = forWhat;
+    this.keyboardInitial = initial;
+    safeClear();
+    this.buildKeyboard();
+  },
+
+  onKeyboardComplete(text) {
+    if (this.keyboardFor === 'message') {
+      draftText = text.trim();
+      this.openChat(currentConv, currentChatTitle);
+      if (draftText) this.sendMessage(draftText);
+    } else if (this.keyboardFor === 'post') {
+      postDraft = text.trim();
+      this.loadFeed();
+      if (postDraft) this.sendPost(postDraft);
+    }
+  },
+
+  onKeyboardCancel() {
+    if (this.keyboardFor === 'message') {
+      this.openChat(currentConv, currentChatTitle);
+    } else if (this.keyboardFor === 'post') {
+      this.loadFeed();
+    }
   },
 
   selectTokenIfNeeded() {
@@ -550,16 +977,7 @@ Page(BasePage({
   },
 
   showPostKeyboard() {
-    createKeyboard({
-      inputType: inputType.TEXT,
-      text: postDraft,
-      onComplete: (_, res) => {
-        postDraft = (res?.data || res?.text || "").trim();
-        this.renderFeedTab();
-        if (postDraft) this.sendPost(postDraft);
-      },
-      onCancel: () => this.renderFeedTab()
-    });
+    this.showCustomKeyboard('post', postDraft);
   },
 
   sendPost(text) {
@@ -895,16 +1313,7 @@ Page(BasePage({
   },
 
   showKeyboard() {
-    createKeyboard({
-      inputType: inputType.TEXT,
-      text: draftText,
-      onComplete: (_, res) => {
-        draftText = (res?.data || res?.text || "").trim();
-        this.drawInput();
-        if (draftText) this.sendMessage(draftText);
-      },
-      onCancel: () => this.drawInput()
-    });
+    this.showCustomKeyboard('message', draftText);
   },
 
   renderKeyboard(keyboard, baseX, baseY, bubbleWidth) {
