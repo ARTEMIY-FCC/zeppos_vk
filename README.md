@@ -1,64 +1,111 @@
 # Zeppos VK
 ![VK Logo](https://i.ibb.co/rfLxC9YD/icon.png)
-**VKontakte client for Zepp OS**
-A lightweight VK messenger app for Amazfit watches running **Zepp OS**.
-Chat with friends, and stay connected right from your wrist.
 
-![video](https://cube.mylittleproject.ru/video.gif)
+**VKontakte client for Zepp OS**  
+Лёгкий мессенджер ВКонтакте для часов Amazfit на **Zepp OS**.  
+Общайтесь с друзьями прямо с запястья!
+
+![demo](https://cube.mylittleproject.ru/video.gif)
+
 ---
-## Features
-- View dialogs and messages
-- Send text messages
+
+## Особенности
+- Просмотр диалогов и сообщений
+- Отправка текстовых сообщений
+- **Поддержка до 3 аккаунтов одновременно**
+- Удобный выбор аккаунта при запуске (если добавлено 2+ токена)
+- Лента новостей и публикация постов на стену
+
 ---
-## Installation
-### 1. Install Zeus CLI
-Follow the official guide:
-[Set up development environment](https://docs.zepp.com/docs/guides/quick-start/environment/)
-### 2. Clone the repository
+
+## Установка
+
+### 1. Установите Zeus CLI
+Следуйте официальной инструкции:  
+[https://docs.zepp.com/docs/guides/quick-start/environment/](https://docs.zepp.com/docs/guides/quick-start/environment/)
+
+### 2. Клонируйте репозиторий
 ```bash
 git clone https://github.com/ARTEMIY-FCC/zeppos_vk.git
 cd zeppos_vk
 ```
-### 3. Get your VK access token
-1. Open [https://vkhost.github.io/](https://vkhost.github.io/)
-2. Click **vk.com**
+
+### 3. Получите токены ВКонтакте
+1. Откройте [https://vkhost.github.io/](https://vkhost.github.io/)
+2. Нажмите **vk.com**  
    ![vk.com button](https://i.ibb.co/LDpS5zbg/2025-11-09-13-09-59.png)
-3. Log in with your VK account
-4. Copy the token from the URL (the part between `access_token=` and `&expires_in`)
-   **Example:**
+3. Войдите в нужный аккаунт ВК
+4. Скопируйте токен из адресной строки (часть между `access_token=` и `&expires_in`)
+
+   **Пример токена:**
    ```
    vk1.a.1mGUhSMwjoqIs7HXcFPOc-lgoZppChEuZ...L3573pZomSad
    ```
-### 4. Insert the token
-Open `zeppos_vk/app-side/index.js` and replace
+
+### 4. Вставьте токены и их названия
+Откройте файл **`app-side/index.js`** и найдите массив `TOKENS`:
+
 ```js
-const ACCESS_TOKEN = "YOUR_VK_TOKEN";
+const TOKENS = [
+  { name: "Аккаунт 1", value: "" },
+  { name: "Аккаунт 2", value: "" },
+  { name: "Аккаунт 3", value: "" }
+];
 ```
-with your actual token:
+
+Замените пустые строки на свои токены и подпишите аккаунты:
+
 ```js
-const ACCESS_TOKEN = "vk1.a.1mGUhSMwjoqIs7HXcFPOc-lgoZppChEuZ...L3573pZomSad";
+const TOKENS = [
+  { name: "Личный",      value: "vk1.a.1mGUhSMwjoqIs7HXcFPOc-lgoZppChEuZ..." },
+  { name: "Рабочий",     value: "vk1.a.xYzAbC123..." },
+  { name: "Тестовый",    value: "" }  // можно оставить пустым
+];
 ```
-### 5. Start the local server
-The app uses a small python script for some preparation.  
-Run it in the project root:
+
+> **Важно:** оставьте хотя бы один токен с непустым `value`, иначе приложение не запустится.
+
+### 5. Запустите локальный сервер
+Приложение использует небольшой скрипт для подготовки данных.  
+Запустите его в корне проекта:
+
 ```bash
 python3 node.py
 ```
-Leave this terminal window open — it must stay running while you preview the app.
 
-### 6. Preview & install
-In another terminal, run:
+**Оставьте это окно открытым** — сервер должен работать всё время, пока вы тестируете приложение.
+
+### 6. Предпросмотр и установка
+В другом терминале выполните:
+
 ```bash
 zeus preview
 ```
-A QR code will appear in the terminal.
-Scan it using the **Zepp app** on your phone ([guide](https://docs.zepp.com/docs/guides/tools/zepp-app/)).
-**Done!** Your VK client is now running on your watch.
+
+Появится QR-код. Отсканируйте его в приложении **Zepp** на телефоне  
+([инструкция](https://docs.zepp.com/docs/guides/tools/zepp-app/)).
+
+**Готово!** Теперь при запуске приложения на часах вы увидите выбор аккаунта (если добавлено 2 или 3 токена).
+
 ---
+
+## Как работает выбор аккаунта
+- Если в `TOKENS` только один непустой токен — приложение запускается сразу.
+- Если 2 или 3 токена — при старте показывается экран с именами аккаунтов.
+- Выбранный токен сохраняется на время сессии и используется для всех запросов.
+
+---
+
+## Обновление приложения
+Просто повторите шаги 5–6 после любых изменений в коде.  
+`zeus preview` автоматически соберёт и отправит новую версию на часы.
+
+---
+
 ## Contributing
-Feel free to open issues or submit pull requests. Any help improving stability, UI, or adding new features is welcome!
+Открывайте Issues и Pull Requests — любая помощь по улучшению UI, стабильности или новых функций очень приветствуется!
+
 ---
-Enjoy chatting from your wrist! ⌚💬
-```
-contact me: artemiy0216@icloud.com
-```
+
+**Наслаждайтесь общением с запястья!**  
+Контакт для связи: **artemiy0216@icloud.com**
