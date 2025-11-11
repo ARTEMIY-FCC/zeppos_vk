@@ -1,8 +1,13 @@
 import { BaseSideService } from "@zeppos/zml/base-side";
 
 const VK_API_BASE = "https://api.vk.com/method/";
-//PUT YOUR VK TOKEN HERE
-const ACCESS_TOKEN = "YOUR_VK_TOKEN";
+// ВСТАВЬ СВОИ ТОКЕНЫ ВК СЮДА
+const TOKENS = [
+  { name: "Аккаунт 1", value: "твой_токен_вк" },
+  { name: "Аккаунт 2", value: "можешь_еще_сюда" },
+  { name: "Аккаунт 3", value: "и_сюда_если_надо" }
+];
+let ACCESS_TOKEN = TOKENS.find(t => t.value.trim())?.value || "";
 const API_VERSION = "5.131";
 
 class VKClient {
@@ -93,12 +98,53 @@ class VKClient {
     try {
       const response = await this.makeVKRequest('groups.getById', {
         group_id: String(groupId),
-        fields: 'photo_50,screen_name'
+        fields: 'description,photo_200,members_count'
       });
       if (Array.isArray(response) && response.length > 0) return response[0];
       return response;
     } catch (error) {
       console.error(`getGroupById(${groupId}) error:`, error && error.message ? error.message : error);
+      throw error;
+    }
+  }
+
+  async getUserById(userId) {
+    try {
+      const response = await this.makeVKRequest('users.get', {
+        user_ids: String(userId),
+        fields: 'photo_200,about,status,online'
+      });
+      if (Array.isArray(response) && response.length > 0) return response[0];
+      return response;
+    } catch (error) {
+      console.error(`getUserById(${userId}) error:`, error && error.message ? error.message : error);
+      throw error;
+    }
+  }
+
+  async getGroupMembers(groupId, count = 20) {
+    try {
+      const response = await this.makeVKRequest('groups.getMembers', {
+        group_id: String(groupId),
+        count: String(count),
+        fields: 'first_name,last_name'
+      });
+      return response;
+    } catch (error) {
+      console.error(`getGroupMembers(${groupId}) error:`, error && error.message ? error.message : error);
+      throw error;
+    }
+  }
+
+  async getConversationMembers(peerId) {
+    try {
+      const response = await this.makeVKRequest('messages.getConversationMembers', {
+        peer_id: String(peerId),
+        fields: 'first_name,last_name'
+      });
+      return response;
+    } catch (error) {
+      console.error(`getConversationMembers(${peerId}) error:`, error && error.message ? error.message : error);
       throw error;
     }
   }
@@ -149,6 +195,59 @@ class VKClient {
       throw error;
     }
   }
+
+  async getProfileInfo() {
+    try {
+      const response = await this.makeVKRequest('account.getProfileInfo');
+      return response;
+    } catch (error) {
+      console.error("getProfileInfo error:", error && error.message ? error.message : error);
+      throw error;
+    }
+  }
+
+  async getNewsfeed() {
+    try {
+      const response = await this.makeVKRequest('newsfeed.get', {
+        filters: 'post',
+        count: '30',
+        extended: '1'
+      });
+      const optimizedItems = (response.items || []).map(item => ({
+        type: item.type,
+        source_id: item.source_id,
+        date: item.date,
+        text: item.text || "",
+        likes: item.likes || { count: 0 },
+        reposts: item.reposts || { count: 0 }
+      }));
+      const profiles = (response.profiles || []).map(p => ({
+        id: Number(p.id),
+        first_name: p.first_name || "",
+        last_name: p.last_name || ""
+      }));
+      const groups = (response.groups || []).map(g => ({
+        id: Number(g.id),
+        name: g.name || ""
+      }));
+      return { items: optimizedItems, profiles, groups };
+    } catch (error) {
+      console.error("getNewsfeed error:", error && error.message ? error.message : error);
+      throw error;
+    }
+  }
+
+  async postWall(message) {
+    try {
+      const response = await this.makeVKRequest('wall.post', {
+        message: String(message)
+      });
+      return response;
+    } catch (error) {
+      console.error("postWall error:", error && error.message ? error.message : error);
+      throw error;
+    }
+  }
 }
 
 const vkClient = new VKClient();
@@ -157,6 +256,22 @@ async function handleRequest(method, params, res) {
   try {
     console.log(`=== HANDLE ${method} ===`, params);
     switch (method) {
+      case "GET_TOKENS": {
+        const validTokens = TOKENS.filter(t => t.value.trim());
+        res(null, { success: true, tokens: validTokens.map(t => t.name) });
+        break;
+      }
+      case "SET_TOKEN": {
+        const index = params.index;
+        const validTokens = TOKENS.filter(t => t.value.trim());
+        if (index >= 0 && index < validTokens.length) {
+          ACCESS_TOKEN = validTokens[index].value;
+          res(null, { success: true });
+        } else {
+          res(null, { success: false, error: "Invalid index" });
+        }
+        break;
+      }
       case "TEST_VK_API": {
         try {
           const body = new URLSearchParams({ user_ids: '1', v: API_VERSION, access_token: ACCESS_TOKEN }).toString();
@@ -180,6 +295,76 @@ async function handleRequest(method, params, res) {
           res(null, { success: true, response: Array.isArray(g) ? g : [g] });
         } catch (e) {
           console.error("GET_GROUP error:", e);
+          res(null, { success: false, error: e && e.message ? e.message : String(e) });
+        }
+        break;
+      }
+      case "GET_GROUP_INFO": {
+        const groupId = params.group_id;
+        if (!groupId) {
+          res(null, { success: false, error: "group_id required" });
+          break;
+        }
+        try {
+          const response = await vkClient.getGroupById(groupId);
+          res(null, { success: true, groups: Array.isArray(response) ? response : [response] });
+        } catch (e) {
+          console.error("GET_GROUP_INFO error:", e);
+          res(null, { success: false, error: e && e.message ? e.message : String(e) });
+        }
+        break;
+      }
+      case "GET_USER_INFO": {
+        const userId = params.user_id;
+        if (!userId) {
+          res(null, { success: false, error: "user_id required" });
+          break;
+        }
+        try {
+          const response = await vkClient.getUserById(userId);
+          res(null, { success: true, users: Array.isArray(response) ? response : [response] });
+        } catch (e) {
+          console.error("GET_USER_INFO error:", e);
+          res(null, { success: false, error: e && e.message ? e.message : String(e) });
+        }
+        break;
+      }
+      case "GET_GROUP_MEMBERS": {
+        const groupId = params.group_id;
+        if (!groupId) {
+          res(null, { success: false, error: "group_id required" });
+          break;
+        }
+        try {
+          const response = await vkClient.getGroupMembers(groupId, params.count || 20);
+          const optimizedUsers = (response.items || []).map(u => ({
+            id: u.id,
+            first_name: u.first_name || "",
+            last_name: u.last_name || ""
+          }));
+          res(null, { success: true, count: response.count || 0, users: optimizedUsers });
+        } catch (e) {
+          console.error("GET_GROUP_MEMBERS error:", e);
+          res(null, { success: false, error: e && e.message ? e.message : String(e) });
+        }
+        break;
+      }
+      case "GET_CONVERSATION_MEMBERS": {
+        const peerId = params.peer_id;
+        if (!peerId) {
+          res(null, { success: false, error: "peer_id required" });
+          break;
+        }
+        try {
+          const response = await vkClient.getConversationMembers(peerId);
+          const optimizedProfiles = (response.profiles || []).map(p => ({
+            id: p.id,
+            first_name: p.first_name || "",
+            last_name: p.last_name || ""
+          }));
+          res(null, { success: true, count: response.count || 0, profiles: optimizedProfiles });
+        } catch (e) {
+          console.error("GET_CONVERSATION_MEMBERS error:", e);
           res(null, { success: false, error: e && e.message ? e.message : String(e) });
         }
         break;
@@ -213,6 +398,22 @@ async function handleRequest(method, params, res) {
         const randomId = params.random_id || Math.floor(Math.random() * 1000000);
         const result = await vkClient.sendMessage(peerId, message, randomId);
         res(null, { success: true, message_id: result.message_id || result });
+        break;
+      }
+      case "GET_PROFILE": {
+        const profile = await vkClient.getProfileInfo();
+        res(null, { success: true, ...profile });
+        break;
+      }
+      case "GET_NEWSFEED": {
+        const feed = await vkClient.getNewsfeed();
+        res(null, { success: true, items: feed.items, profiles: feed.profiles, groups: feed.groups });
+        break;
+      }
+      case "POST_WALL": {
+        const message = params.message || "";
+        const result = await vkClient.postWall(message);
+        res(null, { success: true, post_id: result.post_id });
         break;
       }
       default:
