@@ -1,38 +1,37 @@
 {
   "configVersion": "v3",
   "app": {
-    "appId": 21066,
-    "appName": "VK",
     "appType": "app",
     "version": {
       "code": 1,
-      "name": "1.0.1"
+      "name": "1.0.0"
     },
+    "appId": 21321,
+    "appName": "VK",
     "icon": "icon.png",
     "vender": "zepp",
-    "description": "VK client for zepp os"
+    "description": "VK client"
   },
-  "permissions": [
-    "data:os.device.info",
-    "device:os.local_storage"
-  ],
   "runtime": {
     "apiVersion": {
-      "compatible": "4.0",
-      "target": "4.0",
-      "minVersion": "4.0"
+      "compatible": "2.0",
+      "target": "2.0",
+      "minVersion": "2.0"
     }
   },
   "targets": {
-    "common": {
+    "gt": {
       "module": {
         "page": {
           "pages": [
-            "page/index"
+            "page/home/index.page"
           ]
         },
         "app-side": {
           "path": "app-side/index"
+        },
+        "setting": {
+          "path": "setting/index"
         }
       },
       "platforms": [
@@ -47,10 +46,15 @@
       ]
     }
   },
+  "permissions": [
+    "data:os.device.info",
+    "device:os.local_storage"
+  ],
   "i18n": {
     "en-US": {
-      "appName": "VK"
+      "name": "VK"
     }
   },
-  "defaultLanguage": "en-US"
+  "defaultLanguage": "en-US",
+  "debug": false
 }
