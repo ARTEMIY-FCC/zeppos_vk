@@ -1,7 +1,6 @@
 # Zeppos VK
 ![VK Logo](https://i.ibb.co/rfLxC9YD/icon.png)
 **VKontakte client for Zepp OS**
-![Screenshot 1](https://i.ibb.co/yFWXC1DC/IMG-2911.png) ![Screenshot 2](https://i.ibb.co/Nd4fsZXt/IMG-2912.png)
 A lightweight VK messenger app for Amazfit watches running **Zepp OS**.
 Chat with friends, and stay connected right from your wrist.
 ---
