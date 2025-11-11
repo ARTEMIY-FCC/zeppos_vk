@@ -19,7 +19,7 @@
 
 ## Установка
 Сканируйте QR код в приложении Zepp ([инструкция](https://docs.zepp.com/docs/guides/tools/zepp-app/))
-![qr]([https://i.ibb.co/LDpS5zbg/2025-11-09-13-09-59.png](http://qrcoder.ru/code/?zpkd1%3A%2F%2Fcube.mylittleproject.ru%2Fvk.zpk&4&0))
+![qr][https://github.com/ARTEMIY-FCC/zeppos_vk/blob/main/qr-code%20(4).gif?raw=true]
 ### 3. Получите токены ВКонтакте
 1. Откройте [https://vkhost.github.io/](https://vkhost.github.io/)
 2. Нажмите **vk.com**  
